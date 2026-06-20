@@ -207,20 +207,42 @@ function update() {
                 enemy.hp -= bullet.damage;
                 bullets.splice(b,1);
                 if (enemy.hp <= 0) {
-                    enemies.splice(e,1);
-                    score++;
-
                     gems.push({
                         x:enemy.x,
                         y: enemy.y,
                         value: 1,
                         size: 10,
-                    })
+                    });
+                    enemies.splice(e,1);
+                    score++;
+
                 }
                 break;
             }
         }
     }
+
+    for (let i = gems.length - 1; i >=0; i--) {
+        const gem = gems[i];
+        if (!gem) continue;
+        const dx = player.x - gem.x;
+        const dy = player.y - gem.y;
+        const distance = Math.hypot(dx,dy);
+        const collectionDistance = player.size / 2* gem.size / 2
+
+        if (distance < collectionDistance) {
+            player.xp += gem.value;
+            gems.splice(i,1)
+        }
+    }
+
+    if (player.xp >= player.xpNeeded) {
+        player.xp -= player.xpNeeded;
+        player.level++;
+        player.xpNeeded = Math.floor(player.xpNeeded * 1.5)
+        
+    }
+
 }
 
 //draws everything everyframe
@@ -274,7 +296,7 @@ function draw() {
     }
 
     for (const gem of gems) {
-        ctx.fillStyle = "Lime";l
+        ctx.fillStyle = "lime";
         ctx.fillRect(
             gem.x - gem.size/2,
             gem.y - gem.size/2,
@@ -286,6 +308,16 @@ function draw() {
     ctx.fillStyle = "white";
     ctx.font = "30px Arial";
     ctx.fillText("score: " + score, 20, 80)
+
+    ctx.fillStyle = "grey";
+    ctx.fillRect(20, canvas.height - 30, 300, 20);
+
+    ctx.fillStyle = "lime";
+    ctx.fillRect(20, canvas.height - 30, (player.xp/player.xpNeeded) * 300, 20);
+
+    ctx.fillStyle ="white";
+    ctx.font ="20px Arial";
+    ctx.fillText(`Level ${player.level}`,20,canvas.height - 40)
 
 }
 
