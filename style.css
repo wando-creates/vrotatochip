@@ -1,0 +1,33 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background: rgba(131, 91, 77, 0.751);
+}
+
+canvas {
+    background: rgba(76, 60, 49, 0.618);
+}
+
+#inventoryButton {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+
+    z-index: 100;
+
+}
+
+#inventoryMenu {
+    display: none;
+    position: fixed;
+
+    top: 60px;
+    right: 20px;
+    width: 300px;
+    background: black;
+    color: white;
+    padding: 10px;
+    border: 2px solid white;
+    cursor: pointer;
+    z-index: 100;
+}
