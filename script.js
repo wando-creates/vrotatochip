@@ -1,12 +1,42 @@
 const canvas = document.getElementById("game"); //canvas element form html
 const ctx = canvas.getContext("2d"); //drawing tools 
-const heartImage = new Image()
+
 const inventoryMenu = document.getElementById("inventoryMenu")
 
 //images
+
+const playerLeft = new Image()
+const heartImage = new Image()
+const playerRight = new Image()
+const playerMoveLeft = new Image()
+const playerMoveRight = new Image()
+
+const enemyImages = [
+    new Image(),
+    new Image(),
+    new Image(),
+]
+
+const weaponImages = [
+    new Image(),
+    new Image(),
+    new Image(),
+]
+
+playerLeft.src = "images/left.png"
+playerMoveLeft.src = "images/left-walk.png"
+playerRight.src = "images/right.png"
+playerMoveRight.src = "images/right-walk.png"
+
+enemyImages[0].src = "images/green-slime.png"
+enemyImages[1].src = "images/teal-slime.png"
+enemyImages[2].src = "images/blue_slime.png"
+
+weaponImages[0].src = "images/pistol.png"
+weaponImages[1].src = "images/smg.png"
+weaponImages[2].src = "images/shotgun.png"
+
 heartImage.src = "images/heart.png"
-
-
 //canvas width and height variables 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -15,6 +45,11 @@ let gameOver = false;
 let inventoryOpen = false;
 
 let score = 0;
+
+let walkFrame = false;
+setInterval(() => {
+    walkFrame = !walkFrame;
+}, 150);
 
 //tracks which keys are currently pressed 
 const keys = {};
@@ -29,19 +64,21 @@ const gems = []; //enemy drops array
 const player = {
     x: canvas.width / 2,
     y: canvas.height / 2,
-    size: 25,
+    size: 100,
     speed: 5,
     hp: 5,
     maxHp: 5,
     xp: 0,
     xpNeeded: 10,
     level: 1,
+    direction: "right",
+    moving: false,
 }
 
 const weapons = [
-    {name: "pistol", damage: 10, cooldown: 500, bulletSpeed: 8,  bulletSize: 8, projectiles: 1, owned: true,   icon: null},
-    {name: "SMG",    damage: 2,  cooldown: 100, bulletSpeed: 10, bulletSize: 6, projectiles: 1, owned: false,  icon: null},
-    {name: "shotgun",damage: 8,  cooldown: 800, bulletSpeed: 7,  bulletSize: 7, projectiles: 5, owned: false,  icon: null},
+    {name: "pistol", damage: 10, cooldown: 500, bulletSpeed: 8,  bulletSize: 8, projectiles: 1, owned: true,   icon: weaponImages[0]},
+    {name: "SMG",    damage: 2,  cooldown: 100, bulletSpeed: 10, bulletSize: 6, projectiles: 1, owned: false,  icon: weaponImages[1]},
+    {name: "shotgun",damage: 8,  cooldown: 800, bulletSpeed: 7,  bulletSize: 7, projectiles: 5, owned: false,  icon: weaponImages[2]},
 ]
 
 const inventoryButton = document.getElementById("inventoryButton");
@@ -101,10 +138,12 @@ function spawnEnemy () { //creates a single new enemie
     enemies.push({
         x:x,
         y:y,
-        size:20,
+        size: 100,
+        hitbox: 20,
         speed:2,
         lastHit: 0,
         hp: 20,
+        sprite: enemyImages[Math.floor(Math.random()*3)]
     })
 }
 
@@ -136,23 +175,49 @@ function shootNearestEnemy() {
     const dy = nearestEnemy.y - player.y;
     const distance = Math.hypot(dx, dy);
 
-    bullets.push({
-        x: player.x,
-        y: player.y,
-        vx: (dx / distance) * equippedWeapon.bulletSpeed,
-        vy: (dy/distance) * equippedWeapon.bulletSpeed,
+    for (let i = 0; i < equippedWeapon.projectiles; i++) {
+        const spread = (i - (equippedWeapon.projectiles - 1) / 2) * 0.1;
+        const angle = Math.atan2(dy,dx) + spread;
+        bullets.push({
+            x: player.x,
+            y: player.y,
+            vx: Math.cos(angle) * equippedWeapon.bulletSpeed,
+            vy: Math.sin(angle) * equippedWeapon.bulletSpeed,
 
-        size: equippedWeapon.bulletSize,
-        damage: equippedWeapon.damage
-    })
+            size: equippedWeapon.bulletSize,
+            damage: equippedWeapon.damage
+
+        })
+    }
+
+
 }
 
 //updates game logic every frame
 function update() {
-    if (keys["w"]) player.y -= player.speed;
-    if (keys["s"]) player.y += player.speed;
-    if (keys["a"]) player.x -= player.speed;
-    if (keys["d"]) player.x += player.speed;
+    player.moving = false;
+    if (keys["w"]){
+        player.y -= player.speed;
+        player.moving = true;
+    }
+
+    if (keys["s"]) {
+        player.y += player.speed;
+        player.moving = true;
+    }
+
+    if (keys["a"]) {
+        player.x -= player.speed;
+        player.direction = "left";
+        player.moving = true;
+    }
+
+    if (keys["d"]) {
+        player.x += player.speed;
+            player.direction = "right";
+        player.moving = true;
+    }
+
 
     //loop through every enemy
     for (const enemy of enemies) {
@@ -166,7 +231,7 @@ function update() {
             enemy.y += (dy / dist) * enemy.speed;
         }
         //player enemy collisions
-        const collisionDistance = player.size / 2 + enemy.size / 2;
+        const collisionDistance = player.size / 2 + enemy.hitbox / 2;
         if (dist < collisionDistance) {
             const now = Date.now();
 
@@ -201,7 +266,7 @@ function update() {
             const dy = bullet.y - enemy.y;
 
             const distance = Math.hypot(dx, dy);
-            const hitDistance = bullet.size / 2 + enemy.size / 2;
+            const hitDistance = bullet.size / 2 + enemy.hitbox / 2;
 
             if (distance < hitDistance) {
                 enemy.hp -= bullet.damage;
@@ -228,7 +293,7 @@ function update() {
         const dx = player.x - gem.x;
         const dy = player.y - gem.y;
         const distance = Math.hypot(dx,dy);
-        const collectionDistance = player.size / 2* gem.size / 2
+        const collectionDistance = player.size / 2 + gem.size / 2
 
         if (distance < collectionDistance) {
             player.xp += gem.value;
@@ -249,17 +314,68 @@ function update() {
 function draw() {
     ctx.clearRect(0,0, canvas.width, canvas.height); //clear previous 
 
-    ctx.fillStyle = "blue"; // drawing colour
-    ctx.fillRect( //drawing the player 
-        player.x - player.size / 2,
-        player.y - player.size / 2,
-        player.size,
-        player.size
-    )
+    let aimAngle = 0;
+
+    if (enemies.length > 0) {
+        let nearestEnemy = enemies[0];
+        let nearestDistance = Math.hypot(
+            player.x - nearestEnemy.x,
+            player.y - nearestEnemy.y
+        );
+
+        for (const enemy of enemies) {
+            const distance = Math.hypot(
+                player.x - enemy.x,
+                player.y - enemy.y,
+            );
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestEnemy = enemy;
+            }
+        }
+        aimAngle = Math.atan2(
+            nearestEnemy.y - player.y,
+            nearestEnemy.x - player.x,
+        )
+    }
+
+    
+    let currentPlayerImage;
+    if (player.direction == "left") {
+        if (player.moving) {
+            currentPlayerImage = walkFrame
+            ? playerMoveLeft
+            : playerLeft;
+        } else {
+            currentPlayerImage = playerLeft;
+        }
+    }
+    else {
+        if (player.moving) {
+            currentPlayerImage = walkFrame
+            ? playerMoveRight
+            : playerRight;
+        } else {
+            currentPlayerImage = playerRight;
+        }
+    }
+
+    ctx.drawImage(currentPlayerImage,player.x-64,player.y-64,96,96);
+
+    ctx.save();
+    ctx.translate(
+        player.x, player.y
+    );
+    ctx.rotate(aimAngle)
+    ctx.drawImage(
+        equippedWeapon.icon,
+        -45,-35,75,75
+    );
+    ctx.restore();
 
     for (const enemy of enemies) {
-        ctx.fillStyle ="red"; // colour
-        ctx.fillRect( //drawing the enemies 
+        ctx.drawImage( //drawing the enemies 
+            enemy.sprite,
             enemy.x - enemy.size /2,
             enemy.y - enemy.size /2,
             enemy.size,
@@ -338,7 +454,7 @@ function gameloop() {
 for (const weapon of weapons) {
     const button = document.createElement("button");
     button.innerHTML = `
-    <img src="${weapon.icon}" width = "40">
+    <img src="${weapon.icon.src}" width = "80">
     <h3>${weapon.name}</h3>
     Damage: ${weapon.damage}<br>
     Fire Rate: ${weapon.cooldown}ms<br>
