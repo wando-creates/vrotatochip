@@ -19,22 +19,37 @@ canvas {
 }
 
 #inventoryButton {
-    font-family: "font";
     position: absolute;
-    width: 150px;
-    height: 30px;
-    top: 20px;
-    right: 20px;
+    top: 0;
+    right: 55px;
 
-    background: linear-gradient(to bottom, rgba(46, 22, 53, 0.507), rgba(53, 22, 107, 0.449));
-    border: 3px solid rgb(55, 0, 128);
-    border-radius: 0;
-    color: white;
-    text-align: center;
-    font-size: 18px;
-    font-weight: bold;
+    width: 128px;
+    height: 128px;
+
+    background: none;
+    border: none;
+    padding: 0;
     cursor: pointer;
-    transition: all 0.2s ease;
+}
+
+#inventoryButton img {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    display: block;
+}
+
+#inventoryButton span {
+    position: absolute;
+    bottom: 54px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    color: white;
+    font-family: "font";
+    font-size: 14px;
+    text-shadow: 2px 2px 0 black;
+    pointer-events: none;
 }
 
 #inventoryButton:hover {
@@ -47,7 +62,7 @@ canvas {
     display: none;
     position: absolute;
 
-    top: 75px;
+    top: 95px;
     right: 30px;
     width: 150px;
     max-height: 250px;

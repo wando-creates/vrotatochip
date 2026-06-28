@@ -12,7 +12,12 @@ const playerRight = new Image()
 const playerMoveLeft = new Image()
 const playerMoveRight = new Image()
 const enemyHit = new Image()
+const invButtonImage = new Image()
 
+const mushroomImages = [
+    new Image(),
+    new Image()
+]
 const enemyImages = [
     new Image(),
     new Image(),
@@ -37,6 +42,7 @@ playerLeft.src = "images/left.png"
 playerMoveLeft.src = "images/left-walk.png"
 playerRight.src = "images/right.png"
 playerMoveRight.src = "images/right-walk.png"
+invButtonImage.src = "images/inventory.png"
 
 enemyImages[0].src = "images/green-slime.png"
 enemyImages[1].src = "images/teal-slime.png"
@@ -51,9 +57,16 @@ weaponImages[0].src = "images/pistol.png"
 weaponImages[1].src = "images/smg.png"
 weaponImages[2].src = "images/shotgun.png"
 
+mushroomImages[0].src = "images/mushroom.png"
+mushroomImages[1].src = "images/mushroom2.png"
+
 heartImage.src = "images/heart.png"
 expImage.src = "images/exp2.png"
 grassImage.src = "images/grass.png"
+
+const inventoryButton = document.getElementById("inventoryButton");
+inventoryButton.innerHTML = `
+    <img src="${invButtonImage.src}" alt="Inventory"><span>Inventory</span>`;
 
 //canvas width and height variables 
 function resize() {
@@ -81,6 +94,10 @@ const enemies = []; //enemy array
 const bullets = []; //bullet array (on screen)
 
 const gems = []; //enemy drops array
+
+const mushrooms = [];
+
+const muzzleFlashes = [];
 
 //player object 
 const player = {
@@ -166,7 +183,16 @@ const enemyTypes = [
         rarity:0.05}
 ]
 
-const inventoryButton = document.getElementById("inventoryButton");
+for (let i=0; i<300; i++) {
+    mushrooms.push({
+        x:Math.random() * 10000-5000,
+        y:Math.random() * 10000 - 5000,
+        size: Math.floor(Math.random() * 20) + 50,
+        rotation: Math.random() * Math.PI * 2,
+        image: mushroomImages[Math.floor(Math.random() * mushroomImages.length)]
+    });
+}
+
 inventoryButton.addEventListener("click", () => {
     inventoryOpen = !inventoryOpen;
     if (inventoryOpen) {
@@ -241,7 +267,8 @@ function spawnEnemy () { //creates a single new enemie
         flashTime:0,
         lastHit:0,
         sprite:type.sprite,
-        hitsprite:type.hitsprite
+        hitsprite:type.hitsprite,
+        animOffset: Math.random() * Math.PI * 2
     });
 }
 
@@ -283,10 +310,19 @@ function shootNearestEnemy() {
             vy: Math.sin(angle) * equippedWeapon.bulletSpeed,
 
             size: equippedWeapon.bulletSize,
-            damage: equippedWeapon.damage
+            damage: equippedWeapon.damage,
+
+            trail: []
 
         })
+        muzzleFlashes.push({
+            x:player.x,
+            y:player.y,
+            angle:angle,
+            life:6
+        })
     }
+
 
 
 }
@@ -375,6 +411,13 @@ function update() {
     }
 
     for (const bullet of bullets) {
+        bullet.trail.push({
+            x: bullet.x,
+            y:bullet.y
+        });
+        if (bullet.trail.length > 6) {
+            bullet.trail.shift();
+        }
         bullet.x += bullet.vx;
         bullet.y += bullet.vy;
     }
@@ -431,7 +474,7 @@ function update() {
         gem.pulse += 0.1;
 
         if (distance < 300) {
-            const pullStrength = 0.15;
+            const pullStrength = 0.35;
             gem.vx += (dx/distance) * pullStrength;
             gem.vy += (dy/distance) * pullStrength;
         }
@@ -447,6 +490,13 @@ function update() {
         }
     }
 
+
+    for (let i=muzzleFlashes.length - 1; i >=0; i--) {
+        muzzleFlashes[i].life--;
+        if (muzzleFlashes[i].life <= 0) {
+            muzzleFlashes.splice(i,1);
+        }
+    }
     if (player.xp >= player.xpNeeded) {
         player.xp -= player.xpNeeded;
         player.level++;
@@ -481,8 +531,19 @@ function draw() {
         }
     }
 
-    let aimAngle = 0;
+    for (const mushroom of mushrooms) {
+        ctx.save();
+        ctx.translate(mushroom.x - camera.x, mushroom.y -camera.y);
+        ctx.drawImage(
+            mushroom.image,
+            -mushroom.size / 2,
+            - mushroom.size/2,
+            mushroom.size, mushroom.size
+        );
+        ctx.restore();
+    }
 
+    let aimAngle = 0;
     if (enemies.length > 0) {
         let nearestEnemy = enemies[0];
         let nearestDistance = Math.hypot(
@@ -506,7 +567,7 @@ function draw() {
         )
     }
 
-    
+
     let currentPlayerImage;
     if (player.direction == "left") {
         if (player.moving) {
@@ -527,6 +588,32 @@ function draw() {
         }
     }
 
+    for (const flash of muzzleFlashes) {
+        ctx.save();
+        ctx.translate(
+            flash.x - camera.x,
+            flash.y - camera.y
+        );
+        ctx.rotate(flash.angle);
+        const size = flash.life * 4;
+        ctx.fillStyle = "yellow"
+        ctx.beginPath();
+        ctx.moveTo(size, 0)
+        ctx.lineTo(0, -size/2);
+        ctx.lineTo(0,size/2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.beginPath();
+    ctx.ellipse(
+        canvas.width/2-16,
+        canvas.height / 2 + 25,
+        20,8,0,0,Math.PI*2
+    );
+    ctx.fill();
     ctx.drawImage(currentPlayerImage,canvas.width/2-64,canvas.height/2-64,96,96);
 
     ctx.save();
@@ -540,14 +627,25 @@ function draw() {
     );
     ctx.restore();
 
+    
     for (const enemy of enemies) {
+        ctx.fillStyle = "rgba(0,0,0,0.35)";
+        ctx.beginPath();
+        ctx.ellipse(
+            enemy.x - camera.x,
+            enemy.y -camera.y + enemy.size * 0.28,
+            enemy.hitbox * 0.7,
+            enemy.hitbox * 0.25,0,0,Math.PI*2
+        );
+        ctx.fill();
+        const bounce = Math.sin(Date.now() * 0.01 + enemy.animOffset) * 5;
         const image = enemy.flashTime > 0
             ? enemy.hitsprite
             : enemy.sprite;
         ctx.drawImage( //drawing the enemies 
             image,
             enemy.x - enemy.size /2 -camera.x,
-            enemy.y - enemy.size /2-camera.y,
+            enemy.y - enemy.size /2-camera.y + bounce,
             enemy.size,
             enemy.size
         )
@@ -555,7 +653,7 @@ function draw() {
         ctx.fillStyle = "green"
         ctx.fillRect(
             enemy.x - 15 - camera.x,
-            enemy.y - 20 - camera.y,
+            enemy.y - 20 - camera.y + bounce,
             (enemy.hp/enemy.maxHp) * 30,4
         )
     }
@@ -571,14 +669,33 @@ function draw() {
     }
 
     for (const bullet of bullets) {
-        ctx.fillStyle = "yellow"
+        for (let i=0; i < bullet.trail.length; i++) {
+            const point = bullet.trail[i];
+            ctx.globalAlpha = i / bullet.trail.length;
+            ctx.fillStyle = "orange";
+            ctx.beginPath();
+            ctx.arc(
+                point.x - camera.x,
+                point.y - camera.y,
+                bullet.size/2,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
 
-        ctx.fillRect(
-            bullet.x - bullet.size / 2 - camera.x,
-            bullet.y - bullet.size / 2 - camera.y,
-            bullet.size,
-            bullet.size
+        ctx.fillStyle = "yellow"
+        ctx.beginPath();
+        ctx.arc(
+            bullet.x - camera.x, 
+            bullet.y - camera.y,
+            bullet.size/2,
+            0,
+            Math.PI*2
         )
+        ctx.fill();
+
     }
 
     for (const gem of gems) {
