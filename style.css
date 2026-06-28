@@ -1,6 +1,6 @@
 @font-face {
     font-family: "font";
-    src: url("fonts/bloons.ttf") format("truetype");
+    src: url("fonts/pixel.ttf") format("truetype");
 }
 
 body {
@@ -12,10 +12,6 @@ body {
 
 canvas {
     display: block;
-    width: 100vw;
-    height: 100vh;
-    font-family: "font";
-    background: rgba(76, 60, 49, 0.618);
 }
 
 #inventoryButton {
@@ -47,7 +43,7 @@ canvas {
 
     color: white;
     font-family: "font";
-    font-size: 14px;
+    font-size: 18px;
     text-shadow: 2px 2px 0 black;
     pointer-events: none;
 }
@@ -114,6 +110,4 @@ canvas {
     margin: 0 auto 8px;
     image-rendering: pixelated;
 }
-
-
 

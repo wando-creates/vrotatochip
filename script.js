@@ -1,8 +1,15 @@
 const canvas = document.getElementById("game"); //canvas element form html
 const ctx = canvas.getContext("2d"); //drawing tools 
+//canvas width and height variables 
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
 ctx.imageSmoothingEnabled = false;
 
 const inventoryMenu = document.getElementById("inventoryMenu")
+let gameState = "menu"
 
 //images
 
@@ -70,15 +77,52 @@ const inventoryButton = document.getElementById("inventoryButton");
 inventoryButton.innerHTML = `
     <img src="${invButtonImage.src}" alt="Inventory"><span>Inventory</span>`;
 
-//canvas width and height variables 
-function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
+let buttonHover = false;
+canvas.addEventListener("mousemove", (e) => {
+    if (gameState !== "menu") return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const buttonX = canvas.width / 2 - 150;
+    const buttonY = canvas.height / 2 + 150;
+
+
+    buttonHover =
+        mouseX> buttonX &&
+        mouseX < buttonX + 300 &&
+        mouseY > buttonY &&
+        mouseY < buttonY + 80;
+});
+
+canvas.addEventListener("click", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    if (gameState === "menu") {
+        const buttonX = canvas.width / 2 - 150;
+        const buttonY = canvas.height / 2 + 150;
+        const buttonW = 300;
+        const buttonH = 80;
+
+        if (
+            mouseX> buttonX &&
+            mouseX < buttonX + buttonW &&
+            mouseY > buttonY &&
+            mouseY < buttonY + buttonH
+        ) {
+            gameState = "playing"
+        }
+    }
+})
+
+
 window.addEventListener("resize", resize);
 resize();
 
 let gameOver = false;
+
 let inventoryOpen = false;
 let damageFlash = 0;
 let score = 0;
@@ -728,7 +772,7 @@ function draw() {
 
     ctx.fillStyle = "white";
     ctx.font = "30px 'font'";
-    ctx.fillText("score: " + score, 20, 80)
+    ctx.fillText("score: " + score, 70, 80)
 
     const x = 230;
     const y = 25;
@@ -751,13 +795,65 @@ function draw() {
         ctx.fillRect(0,0,canvas.width, canvas.height);
     }
 }
+function drawStartScreen() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
+    ctx.fillStyle ="#1f1136";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle = "white";
+    ctx.font = "120px 'font'";
+    ctx.textAlign = "center";
+
+    ctx.fillText("Vrotato", canvas.width/2, canvas.height/2);
+ 
+    const buttonX = canvas.width / 2 - 150;
+    const buttonY = canvas.height / 2 + 150;
+
+    ctx.fillStyle = "#20041b9a"
+    ctx.fillRect(buttonX + 12,buttonY+18,300,80);
+
+    if (buttonHover) {
+        ctx.shadowColor = "#ff00ff"
+        ctx.shadowBlur = 25;
+    }
+
+    ctx.fillStyle = buttonHover ? "#8b00ff": "#5b00b8";
+    ctx.fillRect(buttonX,buttonY,300,80);
+
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = "#7d6490";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(buttonX,buttonY,300,80);
+
+    ctx.font = "50px 'font'";
+    ctx.textAlign = "center"
+    ctx.fillStyle = "black";
+    ctx.fillText("START", canvas.width / 2 + 5, buttonY + 55 + 5)
+
+    ctx.fillStyle = "white";
+    ctx.font = "50px 'font'";
+    ctx.fillText("START", canvas.width/2,buttonY+55);
+
+    ctx.fillStyle = "rgba(0,0,0,0.15)"
+    for(let y = 0; y < canvas.height; y += 4){
+        ctx.fillRect(0,y,canvas.width,2);
+    }
+
+}
 //game loop
 function gameloop() {
+    if (gameState === "menu") {
+        drawStartScreen();
+        requestAnimationFrame(gameloop);
+        return;
+    }
+
     if (gameOver) {
         ctx.fillStyle = "white";
-        ctx.font = "60px 'font'";
-        ctx.fillText("Game Over", canvas.width / 2 - 170, canvas.height / 2);
+        ctx.font = "90px 'font'";
+        ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2);
         return;
     }
 
