@@ -177,7 +177,7 @@ const enemyTypes = [
         sprite:enemyImages[0],
         hitsprite:enemyImages[6],
         xp:3,
-        rarity:0.4},
+        rarity:0.399},
     {name: "teal slimes", 
         hp:30,
         speed:1.5,
@@ -227,7 +227,18 @@ const enemyTypes = [
         sprite:enemyImages[5],
         hitsprite:enemyImages[7],
         xp:50, 
-        rarity:0.05}
+        rarity:0.05},
+    {name: "Big Boss",
+        hp:1000,
+        speed: 0.1,
+        damage:2,
+        size: 1200,
+        hitbox: 300,
+        sprite:enemyImages[0],
+        hitsprite:enemyImages[6],
+        xp:500,
+        rarity:0.001
+    }
 ]
 
 for (let i=0; i<300; i++) {
