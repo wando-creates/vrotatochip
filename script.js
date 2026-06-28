@@ -234,7 +234,7 @@ for (let i=0; i<300; i++) {
     mushrooms.push({
         x:Math.random() * 10000-5000,
         y:Math.random() * 10000 - 5000,
-        size: Math.floor(Math.random() * 20) + 50,
+        size: Math.floor(Math.random() * 20) + 200,
         rotation: Math.random() * Math.PI * 2,
         image: mushroomImages[Math.floor(Math.random() * mushroomImages.length)]
     });
@@ -578,7 +578,7 @@ function draw() {
 
     ctx.clearRect(0,0, canvas.width, canvas.height); //clear previous 
 
-    const TILE_SIZE = 96
+    const TILE_SIZE = 216
     const startX = Math.floor(camera.x / TILE_SIZE) * TILE_SIZE;
     const startY = Math.floor(camera.y /TILE_SIZE) * TILE_SIZE;
     for (let x=startX; x < camera.x + canvas.width; x += TILE_SIZE) {
