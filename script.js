@@ -120,7 +120,7 @@ const weapons = [
     {name: "pistol", damage: 10, cooldown: 500, bulletSpeed: 8,  bulletSize: 8, projectiles: 1, owned: true,   icon: weaponImages[0]},
     {name: "SMG",    damage: 3,  cooldown: 100, bulletSpeed: 10, bulletSize: 6, projectiles: 1, owned: false,  icon: weaponImages[1]},
     {name: "shotgun",damage: 8,  cooldown: 800, bulletSpeed: 7,  bulletSize: 7, projectiles: 5, owned: false,  icon: weaponImages[2]},
-    {name: "minigun", damage: 10, cooldown: 50, bulletSpeed: 15, bulletSize: 5, projectiles: 1, owned: true,   icon: weaponImages[3]}
+    {name: "minigun", damage: 10, cooldown: 50, bulletSpeed: 15, bulletSize: 5, projectiles: 10, owned: true,   icon: weaponImages[3]}
 ]
 
 const enemyTypes = [
