@@ -412,8 +412,8 @@ function update() {
         shootNearestEnemy();
         lastShot = now;
     }
-
-    for (const bullet of bullets) {
+    for (let i = bullets.length - 1; i>=0; i--) {
+        const bullet = bullets[i]
         bullet.trail.push({
             x: bullet.x,
             y:bullet.y
@@ -423,6 +423,15 @@ function update() {
         }
         bullet.x += bullet.vx;
         bullet.y += bullet.vy;
+
+        if (
+            bullet.x < camera.x - 100 || 
+            bullet.x > camera.x + canvas.width + 100 || 
+            bullet.y < camera.y - 100 || 
+            bullet.y > camera.y + canvas.height + 100
+        ) {
+            bullets.splice(i, 1);
+        }
     }
 
     if (player.hp <= 0) {
