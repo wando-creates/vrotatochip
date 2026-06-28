@@ -17,6 +17,11 @@ const enemyImages = [
     new Image(),
     new Image(),
     new Image(),
+    new Image(),
+    new Image(),
+    new Image(),
+    new Image(),
+    new Image()
 ]
 
 const weaponImages = [
@@ -36,7 +41,11 @@ playerMoveRight.src = "images/right-walk.png"
 enemyImages[0].src = "images/green-slime.png"
 enemyImages[1].src = "images/teal-slime.png"
 enemyImages[2].src = "images/blue_slime.png"
-enemyHit.src = "images/hit_enemy.png"
+enemyImages[3].src = "images/green-king.png"
+enemyImages[4].src = "images/teal-king.png"
+enemyImages[5].src = "images/blue-king.png"
+enemyImages[6].src = "images/hit_enemy.png"
+enemyImages[7].src = "images/damage_king.png"
 
 weaponImages[0].src = "images/pistol.png"
 weaponImages[1].src = "images/smg.png"
@@ -92,6 +101,69 @@ const weapons = [
     {name: "pistol", damage: 10, cooldown: 500, bulletSpeed: 8,  bulletSize: 8, projectiles: 1, owned: true,   icon: weaponImages[0]},
     {name: "SMG",    damage: 3,  cooldown: 100, bulletSpeed: 10, bulletSize: 6, projectiles: 1, owned: false,  icon: weaponImages[1]},
     {name: "shotgun",damage: 8,  cooldown: 800, bulletSpeed: 7,  bulletSize: 7, projectiles: 5, owned: false,  icon: weaponImages[2]},
+]
+
+const enemyTypes = [
+    {name: "green slime", 
+        hp:20,
+        speed:2,
+        damage:1,
+        size:100,
+        hitbox:20,
+        sprite:enemyImages[0],
+        hitsprite:enemyImages[6],
+        xp:3,
+        rarity:0.4},
+    {name: "teal slimes", 
+        hp:30,
+        speed:1.5,
+        damage:1,
+        size:150,
+        hitbox:25,
+        sprite:enemyImages[1],
+        hitsprite:enemyImages[6],
+        xp:5,
+        rarity:0.25},
+    {name: "blue slime",
+        hp:10,
+        speed:3,
+        damage:1, 
+        size:120,
+        hitbox:22,
+        sprite:enemyImages[2],
+        hitsprite:enemyImages[6],
+        xp:5, 
+        rarity:0.2},
+    {name: "Green King",
+        hp:100, 
+        speed:1,
+        damage:2, 
+        size:200, 
+        hitbox:40,
+        sprite:enemyImages[3],
+        hitsprite:enemyImages[7],
+        xp:50,
+        rarity:0.05},
+    {name: "Teal King",
+        hp:150, 
+        speed:0.5,
+        damage:2,
+        size:300,
+        hitbox:60,
+        sprite:enemyImages[4],
+        hitsprite:enemyImages[7],
+        xp:50, 
+        rarity:0.05},
+    {name: "Blue King", 
+        hp:50,
+        speed:2,
+        damage:2,
+        size:240,
+        hitbox:50,
+        sprite:enemyImages[5],
+        hitsprite:enemyImages[7],
+        xp:50, 
+        rarity:0.05}
 ]
 
 const inventoryButton = document.getElementById("inventoryButton");
@@ -154,18 +226,23 @@ function spawnEnemy () { //creates a single new enemie
         y = camera.y+Math.random() * canvas.height;
     }
 
+    const type = chooseEnemyType();
     enemies.push({
         x:x,
         y:y,
-        size: 100,
-        hitbox: 20,
-        speed:2,
+        name:type.name,
+        size:type.size,
+        hitbox:type.hitbox,
+        speed:type.speed,
+        hp:type.hp,
+        maxHp:type.hp,
+        damage:type.damage,
+        xp:type.xp,
         flashTime:0,
-        lastHit: 0,
-        hp: 20,
-        sprite: enemyImages[Math.floor(Math.random()*3)],
-        hitsprite: enemyHit
-    })
+        lastHit:0,
+        sprite:type.sprite,
+        hitsprite:type.hitsprite
+    });
 }
 
 function shootNearestEnemy() {
@@ -213,7 +290,17 @@ function shootNearestEnemy() {
 
 
 }
-
+function chooseEnemyType() {
+    const roll = Math.random();
+    let total = 0;
+    for (const enemy of enemyTypes) {
+        total += enemy.rarity;
+        if (roll < total) {
+            return enemy;
+        }
+    }
+    return enemyTypes[0];
+}
 //updates game logic every frame
 function update() {
     if (inventoryOpen) return;
@@ -273,7 +360,7 @@ function update() {
             const now = Date.now();
 
             if (now - enemy.lastHit > 1000) {
-                player.hp -= 1;
+                player.hp -= enemy.damage;
                 damageFlash = 10;
                 enemy.lastHit = now;
             }
@@ -316,7 +403,7 @@ function update() {
                         x:enemy.x,
                         y: enemy.y,
                         size: orbSize,
-                        value: (Math.floor(orbSize / 10)),
+                        value: enemy.xp,
                         bobOffset: Math.random() * Math.PI * 2,
                         rotation: 0,
                         pulse: Math.random() * Math.PI * 2,
@@ -469,7 +556,7 @@ function draw() {
         ctx.fillRect(
             enemy.x - 15 - camera.x,
             enemy.y - 20 - camera.y,
-            (enemy.hp/20) * 30,4
+            (enemy.hp/enemy.maxHp) * 30,4
         )
     }
 
