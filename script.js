@@ -33,6 +33,7 @@ const weaponImages = [
     new Image(),
     new Image(),
     new Image(),
+    new Image()
 ]
 
 const expImage = new Image()
@@ -56,6 +57,7 @@ enemyImages[7].src = "images/damage_king.png"
 weaponImages[0].src = "images/pistol.png"
 weaponImages[1].src = "images/smg.png"
 weaponImages[2].src = "images/shotgun.png"
+weaponImages[3].src = "images/minigun.png"
 
 mushroomImages[0].src = "images/mushroom.png"
 mushroomImages[1].src = "images/mushroom2.png"
@@ -118,6 +120,7 @@ const weapons = [
     {name: "pistol", damage: 10, cooldown: 500, bulletSpeed: 8,  bulletSize: 8, projectiles: 1, owned: true,   icon: weaponImages[0]},
     {name: "SMG",    damage: 3,  cooldown: 100, bulletSpeed: 10, bulletSize: 6, projectiles: 1, owned: false,  icon: weaponImages[1]},
     {name: "shotgun",damage: 8,  cooldown: 800, bulletSpeed: 7,  bulletSize: 7, projectiles: 5, owned: false,  icon: weaponImages[2]},
+    {name: "minigun", damage: 10, cooldown: 50, bulletSpeed: 15, bulletSize: 5, projectiles: 1, owned: true,   icon: weaponImages[3]}
 ]
 
 const enemyTypes = [
