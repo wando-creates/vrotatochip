@@ -11,8 +11,7 @@ ctx.imageSmoothingEnabled = false;
 const inventoryMenu = document.getElementById("inventoryMenu")
 let gameState = "menu"
 
-//images
-
+//------------------------------------images
 const playerLeft = new Image()
 const heartImage = new Image()
 const playerRight = new Image()
@@ -73,6 +72,16 @@ heartImage.src = "images/heart.png"
 expImage.src = "images/exp2.png"
 grassImage.src = "images/grass.png"
 
+//--------------------------------Sounds
+const buttonSound = new Audio("sounds/buttonpress.mp3");
+const deathSound = new Audio("sounds/death.mp3");
+const enemyDeathSound = new Audio("sounds/enemy_kill.mp3");
+const levelUpSound = new Audio("sounds/level-up.mp3");
+const shotSound = new Audio("sounds/pistol.mp3");
+const shotgunSound = new Audio("sounds/shotgun.mp3");
+
+shotSound.volume = 0.3;
+
 const inventoryButton = document.getElementById("inventoryButton");
 inventoryButton.innerHTML = `
     <img src="${invButtonImage.src}" alt="Inventory"><span>Inventory</span>`;
@@ -112,6 +121,8 @@ canvas.addEventListener("click", (e) => {
             mouseY > buttonY &&
             mouseY < buttonY + buttonH
         ) {
+            buttonSound.currentTime = 0;
+            buttonSound.play();
             gameState = "playing"
         }
     }
@@ -161,10 +172,50 @@ const player = {
 }
 
 const weapons = [
-    {name: "pistol", damage: 10, cooldown: 500, bulletSpeed: 8,  bulletSize: 8, projectiles: 1, owned: true,   icon: weaponImages[0]},
-    {name: "SMG",    damage: 3,  cooldown: 100, bulletSpeed: 10, bulletSize: 6, projectiles: 1, owned: false,  icon: weaponImages[1]},
-    {name: "shotgun",damage: 8,  cooldown: 800, bulletSpeed: 7,  bulletSize: 7, projectiles: 5, owned: false,  icon: weaponImages[2]},
-    {name: "minigun", damage: 10, cooldown: 50, bulletSpeed: 15, bulletSize: 5, projectiles: 10, owned: true,   icon: weaponImages[3]}
+    {
+        name: "pistol", 
+        damage: 10, 
+        cooldown: 500, 
+        bulletSpeed: 8, 
+        bulletSize: 8,
+        projectiles: 1, 
+        owned: true,   
+        icon: weaponImages[0],
+        sound: shotSound
+    },
+    {
+        name: "SMG",    
+        damage: 5,  
+        cooldown: 300, 
+        bulletSpeed: 10, 
+        bulletSize: 6, 
+        projectiles: 1, 
+        owned: false,  
+        icon: weaponImages[1],
+        sound: shotSound
+    },
+    {
+        name: "shotgun",
+        damage: 8,  
+        cooldown: 800, 
+        bulletSpeed: 7,  
+        bulletSize: 7, 
+        projectiles: 5, 
+        owned: false,  
+        icon: weaponImages[2],
+        sound: shotgunSound
+    },
+    {
+        name: "minigun", 
+        damage: 10, 
+        cooldown: 200, 
+        bulletSpeed: 15, 
+        bulletSize: 5, 
+        projectiles: 1, 
+        owned: true,   
+        icon: weaponImages[3],
+        sound: shotSound
+    }
 ]
 
 const enemyTypes = [
@@ -255,6 +306,10 @@ inventoryButton.addEventListener("click", () => {
     inventoryOpen = !inventoryOpen;
     if (inventoryOpen) {
         inventoryMenu.style.display = "block";
+        shotSound.pause();
+        shotSound.currentTime=0;
+        shotgunSound.pause();
+        shotgunSound.currentTime=0;
     }
     else {
         inventoryMenu.style.display = "none";
@@ -358,6 +413,9 @@ function shootNearestEnemy() {
     const dy = nearestEnemy.y - player.y;
     const distance = Math.hypot(dx, dy);
 
+    const sound = equippedWeapon.sound.cloneNode();
+    sound.volume = equippedWeapon.sound.volume;
+    sound.play();
     for (let i = 0; i < equippedWeapon.projectiles; i++) {
         const spread = (i - (equippedWeapon.projectiles - 1) / 2) * 0.1;
         const angle = Math.atan2(dy,dx) + spread;
@@ -377,7 +435,8 @@ function shootNearestEnemy() {
             x:player.x,
             y:player.y,
             angle:angle,
-            life:6
+            life:8,
+            size:24
         })
     }
 
@@ -490,6 +549,7 @@ function update() {
     }
 
     if (player.hp <= 0) {
+        deathSound.play();
         gameOver = true;
     }
 
@@ -509,6 +569,8 @@ function update() {
                 bullets.splice(b,1);
                 const orbSize = Math.floor(Math.random() * 31) + 20;
                 if (enemy.hp <= 0) {
+                    const sound = enemyDeathSound.cloneNode();
+                    sound.play();
                     gems.push({
                         x:enemy.x,
                         y: enemy.y,
@@ -565,6 +627,8 @@ function update() {
         }
     }
     if (player.xp >= player.xpNeeded) {
+        levelUpSound.currentTime=0;
+        levelUpSound.play();
         player.xp -= player.xpNeeded;
         player.level++;
         player.xpNeeded = Math.floor(player.xpNeeded * 1.5)
@@ -738,31 +802,44 @@ function draw() {
     for (const bullet of bullets) {
         for (let i=0; i < bullet.trail.length; i++) {
             const point = bullet.trail[i];
-            ctx.globalAlpha = i / bullet.trail.length;
-            ctx.fillStyle = "orange";
+            const alpha = i / bullet.trail.length;
             ctx.beginPath();
+            ctx.fillStyle = `rgba(255,230,100,${alpha * 0.4})`;
             ctx.arc(
                 point.x - camera.x,
                 point.y - camera.y,
-                bullet.size/2,
+                bullet.size * alpha,
                 0,
                 Math.PI * 2
             );
             ctx.fill();
         }
-        ctx.globalAlpha = 1;
 
-        ctx.fillStyle = "yellow"
+        const x = bullet.x - camera.x;
+        const y = bullet.y - camera.y;
+
+        ctx.shadowColor = "#ffd84d";
+        ctx.shadowBlur = 25;
+
         ctx.beginPath();
-        ctx.arc(
-            bullet.x - camera.x, 
-            bullet.y - camera.y,
-            bullet.size/2,
-            0,
-            Math.PI*2
-        )
+        ctx.fillStyle = "rgba(255,220,80,0.15)";
+        ctx.arc(x,y,bullet.size * 2.2, 0, Math.PI * 2);
         ctx.fill();
 
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(255,230,120,0.25)";
+        ctx.arc(x,y,bullet.size*1.5,0,Math.PI*2)
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.fillStyle = "#fff9c4"
+        ctx.arc(x,y,bullet.size,0,Math.PI*2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.fillStyle = "white"
+        ctx.arc(x,y,bullet.size,0,Math.PI * 2);
+        ctx.fill();
     }
 
     for (const gem of gems) {
@@ -884,11 +961,17 @@ for (const weapon of weapons) {
     `;
 
     button.onclick = () => {
+        buttonSound.currentTime=0;
+        buttonSound.play();
         equippedWeapon = weapon;
         console.log("equipped",weapon.name);
     };
     inventoryMenu.appendChild(button)
 }
 
-setInterval(spawnEnemy, 1000) // spawn one enemy every second 
+setInterval(() => {
+    if (gameState !== "playing") return;
+    if (inventoryOpen) return;
+    spawnEnemy();
+}, 1000) // spawn one enemy every second 
 gameloop();
