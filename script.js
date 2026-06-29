@@ -9,6 +9,9 @@ function resize() {
 ctx.imageSmoothingEnabled = false;
 
 const inventoryMenu = document.getElementById("inventoryMenu")
+const maxEnemies = 150;
+const maxParticles = 500;
+const maxBullets = 100;
 let gameState = "menu"
 
 //------------------------------------images
@@ -233,7 +236,9 @@ const enemyTypes = [
         sprite:enemyImages[0],
         hitsprite:enemyImages[6],
         xp:3,
-        rarity:0.399},
+        rarity:0.399,
+        spriteOffsetY:-20
+    },
     {name: "teal slimes", 
         hp:30,
         speed:1.5,
@@ -243,7 +248,9 @@ const enemyTypes = [
         sprite:enemyImages[1],
         hitsprite:enemyImages[6],
         xp:5,
-        rarity:0.25},
+        rarity:0.25,
+        spriteOffsetY:-25
+    },
     {name: "blue slime",
         hp:10,
         speed:3,
@@ -253,7 +260,9 @@ const enemyTypes = [
         sprite:enemyImages[2],
         hitsprite:enemyImages[6],
         xp:5, 
-        rarity:0.2},
+        rarity:0.2,
+        spriteOffsetY:-22
+    },
     {name: "Green King",
         hp:100, 
         speed:1,
@@ -263,7 +272,9 @@ const enemyTypes = [
         sprite:enemyImages[3],
         hitsprite:enemyImages[7],
         xp:50,
-        rarity:0.05},
+        rarity:0.05,
+        spriteOffsetY:-30
+    },
     {name: "Teal King",
         hp:150, 
         speed:0.5,
@@ -273,7 +284,9 @@ const enemyTypes = [
         sprite:enemyImages[4],
         hitsprite:enemyImages[7],
         xp:50, 
-        rarity:0.05},
+        rarity:0.05,
+        spriteOffsetY:-50
+    },
     {name: "Blue King", 
         hp:50,
         speed:2,
@@ -283,7 +296,9 @@ const enemyTypes = [
         sprite:enemyImages[5],
         hitsprite:enemyImages[7],
         xp:50, 
-        rarity:0.05},
+        rarity:0.05,
+        spriteOffsetY:-40
+    },
     {name: "Big Boss",
         hp:1000,
         speed: 0.1,
@@ -293,11 +308,12 @@ const enemyTypes = [
         sprite:enemyImages[0],
         hitsprite:enemyImages[6],
         xp:500,
-        rarity:0.001
+        rarity:0.001,
+        spriteOffsetY:-200
     }
 ]
 
-for (let i=0; i<300; i++) {
+for (let i=0; i<100; i++) {
     mushrooms.push({
         x:Math.random() * 10000-5000,
         y:Math.random() * 10000 - 5000,
@@ -387,6 +403,7 @@ function spawnEnemy () { //creates a single new enemie
         lastHit:0,
         sprite:type.sprite,
         hitsprite:type.hitsprite,
+        spriteOffsetY:type.spriteOffsetY,
         animOffset: Math.random() * Math.PI * 2
     });
 }
@@ -425,18 +442,21 @@ function shootNearestEnemy() {
     for (let i = 0; i < equippedWeapon.projectiles; i++) {
         const spread = (i - (equippedWeapon.projectiles - 1) / 2) * 0.1;
         const angle = Math.atan2(dy,dx) + spread;
-        bullets.push({
-            x: player.x,
-            y: player.y,
-            vx: Math.cos(angle) * equippedWeapon.bulletSpeed,
-            vy: Math.sin(angle) * equippedWeapon.bulletSpeed,
+        if (bullets.length < maxBullets) {
+            bullets.push({
+                x: player.x,
+                y: player.y,
+                vx: Math.cos(angle) * equippedWeapon.bulletSpeed,
+                vy: Math.sin(angle) * equippedWeapon.bulletSpeed,
 
-            size: equippedWeapon.bulletSize,
-            damage: equippedWeapon.damage,
+                size: equippedWeapon.bulletSize,
+                damage: equippedWeapon.damage,
 
-            trail: []
+                trail: []
 
-        })
+            })
+        }
+
         muzzleFlashes.push({
             x:player.x,
             y:player.y,
@@ -528,7 +548,9 @@ function update() {
 
     spawnTimer += 16;
     if (spawnTimer >= spawnDelay) {
-        spawnEnemy();
+        if (enemies.length < maxEnemies) {
+            spawnEnemy();   
+        }
         spawnTimer=0;
     }
 
@@ -569,12 +591,11 @@ function update() {
         const bullet = bullets[b];
         for (let e = enemies.length - 1; e >= 0; e--) {
             const enemy = enemies[e];
-            const dx = bullet.x - enemy.x;
-            const dy = bullet.y - enemy.y;
-
-            const distance = Math.hypot(dx, dy);
+            const distance = Math.hypot(
+                bullet.x - enemy.x,
+                bullet.y-enemy.y
+            );
             const hitDistance = bullet.size / 2 + enemy.hitbox / 2;
-
             if (distance < hitDistance) {
                 enemy.hp -= bullet.damage;
                 enemy.flashTime = 6;
@@ -583,14 +604,15 @@ function update() {
                 if (enemy.hp <= 0) {
 
                     for (let i = 0; i < 12; i++) {
-                        particles.push({
-                            x:enemy.x,
-                            y:enemy.y,
-                            vx:(Math.random()-0.5) * 8,
-                            vy:(Math.random()-0.5) * 8,
-                            size: Math.random() * 6 + 4,
-                            life: 25
-                        });
+                        if (particles.length < maxParticles)
+                            particles.push({
+                                x:enemy.x,
+                                y:enemy.y,
+                                vx:(Math.random()-0.5) * 8,
+                                vy:(Math.random()-0.5) * 8,
+                                size: Math.random() * 6 + 4,
+                                life: 25
+                            });
                     }
 
                     const sound = enemyDeathSound.cloneNode();
@@ -815,7 +837,7 @@ function draw() {
         ctx.beginPath();
         ctx.ellipse(
             enemy.x - camera.x,
-            enemy.y -camera.y + enemy.size * 0.28,
+            enemy.y -camera.y + enemy.hitbox * 0.28,
             enemy.hitbox * 0.7,
             enemy.hitbox * 0.25,0,0,Math.PI*2
         );
@@ -827,7 +849,7 @@ function draw() {
         ctx.drawImage( //drawing the enemies 
             image,
             enemy.x - enemy.size /2 -camera.x,
-            enemy.y - enemy.size /2-camera.y + bounce,
+            enemy.y - enemy.size /2-camera.y + bounce + enemy.spriteOffsetY,
             enemy.size,
             enemy.size
         )
@@ -835,7 +857,7 @@ function draw() {
         ctx.fillStyle = "green"
         ctx.fillRect(
             enemy.x - 15 - camera.x,
-            enemy.y - 20 - camera.y + bounce,
+            enemy.y - 20 - camera.y + bounce + enemy.spriteOffsetY,
             (enemy.hp/enemy.maxHp) * 30,4
         )
     }
