@@ -137,6 +137,9 @@ let gameOver = false;
 let inventoryOpen = false;
 let damageFlash = 0;
 let score = 0;
+let difficulty = 1;
+let spawnTimer = 0;
+let spawnDelay = 2000;
 
 let walkFrame = false;
 setInterval(() => {
@@ -155,6 +158,8 @@ const gems = []; //enemy drops array
 const mushrooms = [];
 
 const muzzleFlashes = [];
+
+const particles = [];
 
 //player object 
 const player = {
@@ -208,11 +213,11 @@ const weapons = [
     {
         name: "minigun", 
         damage: 10, 
-        cooldown: 200, 
+        cooldown: 250, 
         bulletSpeed: 15, 
         bulletSize: 5, 
         projectiles: 1, 
-        owned: true,   
+        owned: false,   
         icon: weaponImages[3],
         sound: shotSound
     }
@@ -372,9 +377,10 @@ function spawnEnemy () { //creates a single new enemie
         name:type.name,
         size:type.size,
         hitbox:type.hitbox,
+
         speed:type.speed,
-        hp:type.hp,
-        maxHp:type.hp,
+        hp:Math.floor(type.hp * (1+player.level*0.02)),
+        maxHp:Math.floor(type.hp *(1+player.level*0.02)),
         damage:type.damage,
         xp:type.xp,
         flashTime:0,
@@ -520,6 +526,12 @@ function update() {
         }
     }
 
+    spawnTimer += 16;
+    if (spawnTimer >= spawnDelay) {
+        spawnEnemy();
+        spawnTimer=0;
+    }
+
     const now = Date.now();
 
     if (now - lastShot > equippedWeapon.cooldown) {
@@ -569,6 +581,18 @@ function update() {
                 bullets.splice(b,1);
                 const orbSize = Math.floor(Math.random() * 31) + 20;
                 if (enemy.hp <= 0) {
+
+                    for (let i = 0; i < 12; i++) {
+                        particles.push({
+                            x:enemy.x,
+                            y:enemy.y,
+                            vx:(Math.random()-0.5) * 8,
+                            vy:(Math.random()-0.5) * 8,
+                            size: Math.random() * 6 + 4,
+                            life: 25
+                        });
+                    }
+
                     const sound = enemyDeathSound.cloneNode();
                     sound.play();
                     gems.push({
@@ -631,11 +655,38 @@ function update() {
         levelUpSound.play();
         player.xp -= player.xpNeeded;
         player.level++;
-        player.xpNeeded = Math.floor(player.xpNeeded * 1.5)
+        difficulty += 0.08;
+        player.xpNeeded = Math.floor(player.xpNeeded * 1.2)
+
+        spawnDelay = Math.max(250,spawnDelay-20);
+        if (player.level===5) {
+            weapons[1].owned = true;
+            updateInventory();
+        }
+        if(player.level===10) {
+            weapons[2].owned = true;
+            updateInventory();
+        }
+        if(player.level===15) {
+            weapons[3].owned=true;
+            updateInventory();
+        }
         
     }
     if (damageFlash > 0) {
         damageFlash--;
+    }
+
+    for (let i = particles.length - 1; i >=0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.92;
+        p.vy *= 0.92;
+        p.life--;
+        if (p.life <= 0) {
+            particles.splice(i,1);
+        }
     }
 }
 
@@ -788,6 +839,15 @@ function draw() {
             (enemy.hp/enemy.maxHp) * 30,4
         )
     }
+
+    for (const p of particles) {
+        ctx.globalAlpha = p.life/25;
+        ctx.fillStyle = "#ffcf40"
+        ctx.beginPath();
+        ctx.arc(p.x-camera.x,p.y-camera.y,p.size,0,Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }    
 
     for (let i = 0; i < player.hp; i++) {
         ctx.drawImage (
@@ -950,28 +1010,28 @@ function gameloop() {
     requestAnimationFrame(gameloop); //loops the game
 }
 
-for (const weapon of weapons) {
-    const button = document.createElement("button");
-    button.innerHTML = `
-    <img src="${weapon.icon.src}" width = "80">
-    <h3>${weapon.name}</h3>
-    Damage: ${weapon.damage}<br>
-    Fire Rate: ${weapon.cooldown}ms<br>
-    Projectiles: ${weapon.projectiles}<br>
-    `;
+function updateInventory() {
+    inventoryMenu.innerHTML = "";
+    for (const weapon of weapons) {
+        if (!weapon.owned) continue;
+        const button = document.createElement("button");
+        button.innerHTML = `
+        <img src="${weapon.icon.src}" width = "80">
+        <h3>${weapon.name}</h3>
+        Damage: ${weapon.damage}<br>
+        Fire Rate: ${weapon.cooldown}ms<br>
+        Projectiles: ${weapon.projectiles}<br>
+        `;
 
-    button.onclick = () => {
-        buttonSound.currentTime=0;
-        buttonSound.play();
-        equippedWeapon = weapon;
-        console.log("equipped",weapon.name);
-    };
-    inventoryMenu.appendChild(button)
+        button.onclick = () => {
+            buttonSound.currentTime=0;
+            buttonSound.play();
+            equippedWeapon = weapon;
+            console.log("equipped",weapon.name);
+        };
+        inventoryMenu.appendChild(button)
+    }
 }
 
-setInterval(() => {
-    if (gameState !== "playing") return;
-    if (inventoryOpen) return;
-    spawnEnemy();
-}, 1000) // spawn one enemy every second 
+updateInventory();
 gameloop();
